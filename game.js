@@ -347,5 +347,7 @@ restartBtn.addEventListener('click', init);
 
 let savedTheme = null;
 try { savedTheme = localStorage.getItem(THEME_KEY); } catch (e) { /* ignorar */ }
+// Sin preferencia guardada, se usa la del sistema operativo
+const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
 init();
-applyTheme(savedTheme === 'light' ? 'light' : 'dark');
+applyTheme(savedTheme === 'light' || (savedTheme === null && prefersLight) ? 'light' : 'dark');
