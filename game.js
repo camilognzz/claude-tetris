@@ -28,6 +28,26 @@ const PIECES = [
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
+// Colores del canvas por tema (el CSS no afecta a lo que se dibuja en el canvas)
+const THEMES = {
+  dark: { grid: '#22222e', highlight: 'rgba(255,255,255,0.12)', colors: COLORS },
+  light: {
+    grid: '#d5d7e3',
+    highlight: 'rgba(255,255,255,0.35)',
+    colors: [
+      null,
+      '#00acc1', // I
+      '#f9a825', // O
+      '#8e24aa', // T
+      '#43a047', // S
+      '#e53935', // Z
+      '#1e88e5', // J
+      '#fb8c00', // L
+    ],
+  },
+};
+const THEME_KEY = 'tetris-theme';
+
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
@@ -39,6 +59,10 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const themeBtn = document.getElementById('theme-toggle');
+
+// El tema es una preferencia del usuario: no se reinicia en init()
+let theme = 'dark';
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 
@@ -158,18 +182,18 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  const t = THEMES[theme];
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
+  context.fillStyle = t.colors[colorIndex];
   context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
   // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
+  context.fillStyle = t.highlight;
   context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
   context.globalAlpha = 1;
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = THEMES[theme].grid;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -299,6 +323,29 @@ document.addEventListener('keydown', e => {
   updateHUD();
 });
 
+function applyTheme(name) {
+  theme = name;
+  document.documentElement.dataset.theme = name;
+  const isLight = name === 'light';
+  themeBtn.textContent = isLight ? 'Modo oscuro' : 'Modo claro';
+  themeBtn.setAttribute('aria-pressed', String(isLight));
+  // Redibujar una vez: con el juego en pausa el bucle no corre
+  if (current) {
+    draw();
+    drawNext();
+  }
+}
+
+themeBtn.addEventListener('click', () => {
+  const name = theme === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem(THEME_KEY, name); } catch (e) { /* almacenamiento no disponible */ }
+  applyTheme(name);
+  themeBtn.blur(); // evita que Space active el botón
+});
+
 restartBtn.addEventListener('click', init);
 
+let savedTheme = null;
+try { savedTheme = localStorage.getItem(THEME_KEY); } catch (e) { /* ignorar */ }
 init();
+applyTheme(savedTheme === 'light' ? 'light' : 'dark');
