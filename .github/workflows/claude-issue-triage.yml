@@ -83,6 +83,12 @@ jobs:
                  textos de UI en español).
                - Preguntas abiertas: información que falta para resolverlo (o "Ninguna").
                No incluyas un título principal (#); el comentario ya lleva encabezado.
+               El contenido se publica tal cual como comentario del issue, así que debe ser
+               Markdown válido de GitHub (GitHub Flavored Markdown): usa listas con `-`, código
+               inline con backticks, bloques de código con ``` y el lenguaje (p. ej. ```js),
+               tablas GFM si ayudan, y deja una línea en blanco antes y después de encabezados,
+               listas y bloques de código. No uses HTML ni sintaxis que GitHub no renderice, y no
+               envuelvas todo el archivo en un bloque de código.
             4. No modifiques ningún otro archivo del repositorio.
 
       - name: Apply labels and post diagnosis
