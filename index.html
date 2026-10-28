@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tetris</title>
-  <link rel="stylesheet" href="style.css?v=2" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
   <button id="theme-toggle" type="button" aria-pressed="false">Modo claro</button>
@@ -51,11 +51,31 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+        <div id="gameover-records" class="records-block hidden">
+          <p id="records-new" class="records-new hidden">¡Entras en el Top 5!</p>
+          <form id="records-form" class="records-form hidden" autocomplete="off">
+            <input id="records-name" type="text" maxlength="12" value="Jugador" aria-label="Nombre del jugador" />
+            <button id="records-save-btn" type="submit">Guardar</button>
+          </form>
+          <div id="gameover-records-table"></div>
+          <button id="gameover-clear-btn" class="clear-records-btn" type="button">Borrar records</button>
+        </div>
         <button id="restart-btn">Reiniciar</button>
+      </div>
+    </div>
+
+    <div id="start-screen" class="overlay">
+      <div class="overlay-box">
+        <p class="start-title">TETRIS</p>
+        <button id="start-btn" type="button">Jugar</button>
+        <div class="records-block">
+          <div id="start-records-table"></div>
+          <button id="start-clear-btn" class="clear-records-btn" type="button">Borrar records</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <script src="game.js?v=2"></script>
+  <script src="game.js?v=3"></script>
 </body>
 </html>
