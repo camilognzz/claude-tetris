@@ -44,6 +44,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Menú de pausa** (reanudar, reiniciar, ver controles, nivel inicial) y **Game Over** con opción de reinicio.
 - **Pantalla de inicio** con botón _Jugar_: la partida no empieza hasta pulsarlo.
 - **Tabla de records local** (`localStorage`, clave `tetris-records`): Top 5 puntuaciones con nombre del jugador (se pide al terminar la partida si entras en el top), mejor combo (bloqueos consecutivos que eliminan líneas) y máximo de líneas en una partida. Se muestra en la pantalla de inicio y en el Game Over, resalta tu entrada y se puede borrar con _Borrar records_ (doble clic de confirmación).
+- **Skins visuales** seleccionables sin recargar: **Retro** (bloques planos), **Neón** (fondo negro con brillo), **Pastel** (colores suaves y bordes redondeados) y **Pixel art** (textura pixelada con bisel). La elección se guarda en `localStorage`.
 
 ---
 
@@ -106,8 +107,8 @@ El juego se compone de tres archivos que cooperan:
 Define la estructura visual:
 
 - Un `<canvas id="board">` de **300 × 600** píxeles donde se renderiza el tablero.
-- Un panel lateral con `SCORE`, `LINES`, `LEVEL`, vista de la siguiente pieza y la lista de controles.
-- Un overlay para **GAME OVER** y otro (`#pause-menu`) para el menú de **PAUSA**.
+- Un overlay para **GAME OVER**, otro (`#pause-menu`) para el menú de **PAUSA** y la pantalla de inicio (`#start-screen`) con los records.
+- Un panel lateral con `SCORE`, `LINES`, `LEVEL`, vista de la siguiente pieza, el selector de skin y la lista de controles.
 
 ### 2. `style.css`
 
@@ -126,6 +127,7 @@ Contiene toda la lógica del juego. A grandes rasgos:
 - **Puntuación**: usa la tabla clásica `[0, 100, 300, 500, 800]` multiplicada por el nivel actual; el hard drop suma 2 puntos por celda recorrida y el soft drop 1 punto por fila.
 - **Nivel y velocidad**: el nivel sube cada 10 líneas; la velocidad de caída se calcula como `max(100, 1000 − (level − 1) × 90)` milisegundos.
 - **Ghost piece** (`ghostY`): proyecta la posición final de la pieza actual hacia abajo y la dibuja con `globalAlpha = 0.2`.
+- **Skins** (`SKINS`): cada skin define su propia función de dibujo de bloque y, opcionalmente, su paleta y color de rejilla por tema; `drawBlock` delega en la skin activa. La preferencia se guarda con la clave `tetris-skin`.
 
 ### Flujo del juego
 

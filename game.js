@@ -183,18 +183,14 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const t = THEMES[theme];
+  // El dibujo concreto depende de la skin activa (ver sección "Skins")
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = t.colors[colorIndex];
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = t.highlight;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  drawSkinBlock(context, x * size, y * size, size, colorIndex);
   context.globalAlpha = 1;
 }
 
 function drawGrid() {
-  ctx.strokeStyle = THEMES[theme].grid;
+  ctx.strokeStyle = skinValue('grid');
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -360,6 +356,177 @@ themeBtn.addEventListener('click', () => {
   applyTheme(name);
   themeBtn.blur(); // evita que Space active el botón
 });
+
+// ---- Skins visuales ----
+// Cada skin define su forma de dibujar un bloque y, opcionalmente, su propia
+// paleta y color de rejilla por tema ({ dark, light }). Lo que no defina se
+// toma de THEMES[theme]. La skin es una preferencia: no se reinicia en init().
+const SKIN_KEY = 'tetris-skin';
+
+function drawRetroBlock(context, px, py, size, color, t) {
+  context.fillStyle = color;
+  context.fillRect(px + 1, py + 1, size - 2, size - 2);
+  // highlight
+  context.fillStyle = t.highlight;
+  context.fillRect(px + 1, py + 1, size - 2, 4);
+}
+
+function drawNeonBlock(context, px, py, size, color) {
+  const a = context.globalAlpha;
+  // relleno tenue sin glow
+  context.globalAlpha = a * 0.25;
+  context.fillStyle = color;
+  context.fillRect(px + 3, py + 3, size - 6, size - 6);
+  context.globalAlpha = a;
+  // borde brillante con glow
+  context.shadowColor = color;
+  context.shadowBlur = size * 0.4;
+  context.strokeStyle = color;
+  context.lineWidth = 2;
+  context.strokeRect(px + 4, py + 4, size - 8, size - 8);
+  // núcleo claro
+  context.shadowBlur = size * 0.2;
+  context.fillStyle = color;
+  context.fillRect(px + size / 2 - 2, py + size / 2 - 2, 4, 4);
+  // imprescindible: sin esto la rejilla y el resto se dibujarían borrosos
+  context.shadowBlur = 0;
+  context.shadowColor = 'transparent';
+}
+
+function roundRectPath(context, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  context.beginPath();
+  if (typeof context.roundRect === 'function') {
+    context.roundRect(x, y, w, h, r);
+  } else {
+    context.moveTo(x + r, y);
+    context.arcTo(x + w, y, x + w, y + h, r);
+    context.arcTo(x + w, y + h, x, y + h, r);
+    context.arcTo(x, y + h, x, y, r);
+    context.arcTo(x, y, x + w, y, r);
+    context.closePath();
+  }
+}
+
+function drawPastelBlock(context, px, py, size, color) {
+  const r = size * 0.28;
+  roundRectPath(context, px + 2, py + 2, size - 4, size - 4, r);
+  context.fillStyle = color;
+  context.fill();
+  context.strokeStyle = 'rgba(0,0,0,0.12)';
+  context.lineWidth = 1;
+  context.stroke();
+  // brillo suave en la parte superior
+  roundRectPath(context, px + 5, py + 4, size - 10, size * 0.22, r / 2);
+  context.fillStyle = 'rgba(255,255,255,0.4)';
+  context.fill();
+}
+
+function drawPixelBlock(context, px, py, size, color) {
+  const p = size / 10; // la celda se divide en 10×10 "píxeles"
+  function cell(cx, cy, w, h, style) {
+    context.fillStyle = style;
+    context.fillRect(Math.round(px + cx * p), Math.round(py + cy * p), Math.round(w * p), Math.round(h * p));
+  }
+  cell(0, 0, 10, 10, color);
+  // bisel: claro arriba/izquierda, oscuro abajo/derecha
+  cell(0, 0, 10, 1, 'rgba(255,255,255,0.45)');
+  cell(0, 1, 1, 9, 'rgba(255,255,255,0.45)');
+  cell(1, 9, 9, 1, 'rgba(0,0,0,0.4)');
+  cell(9, 1, 1, 8, 'rgba(0,0,0,0.4)');
+  // textura: rejilla de puntos claros/oscuros alternos
+  for (let gy = 2; gy < 9; gy += 2)
+    for (let gx = 2; gx < 9; gx += 2)
+      cell(gx, gy, 1, 1, (gx + gy) % 4 === 0 ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)');
+  // reflejo en la esquina superior izquierda
+  cell(2, 2, 2, 1, 'rgba(255,255,255,0.6)');
+  cell(2, 3, 1, 1, 'rgba(255,255,255,0.6)');
+}
+
+// cached: el bloque se pre-renderiza una vez por color/tamaño/tema en un canvas
+// fuera de pantalla (con margen para el glow) y luego se copia con drawImage,
+// para no repetir shadowBlur y decenas de fillRect por celda en cada frame.
+const SKINS = {
+  retro: { draw: drawRetroBlock },
+  neon: {
+    draw: drawNeonBlock,
+    cached: true,
+    // El tablero de Neón siempre es negro (ver [data-skin="neon"] en style.css)
+    grid: { dark: '#15152a' },
+    colors: {
+      dark: [null, '#00f0ff', '#fff200', '#ff3df5', '#39ff14', '#ff2a55', '#3d7bff', '#ff9a1f'],
+    },
+  },
+  pastel: {
+    draw: drawPastelBlock,
+    cached: true,
+    colors: {
+      dark: [null, '#a8e6ef', '#fff1a8', '#d7b8f3', '#b9e4c9', '#f7b2b7', '#b5d3f5', '#ffd1a6'],
+      light: [null, '#7fd3e0', '#f5d76e', '#c39be8', '#93d3ab', '#f09199', '#8fbaf0', '#f7b77d'],
+    },
+  },
+  pixel: { draw: drawPixelBlock, cached: true },
+};
+
+const skinSelect = document.getElementById('skin-select');
+let skin = 'retro';
+const skinCache = new Map();
+
+// Valor de la skin activa para el tema actual, o el de THEMES si no lo define
+function skinValue(key) {
+  const v = SKINS[skin][key];
+  return v ? (v[theme] || v.dark) : THEMES[theme][key];
+}
+
+// Dibuja un bloque con la skin activa; globalAlpha ya viene fijado por drawBlock
+function drawSkinBlock(context, px, py, size, colorIndex) {
+  const s = SKINS[skin];
+  const color = skinValue('colors')[colorIndex];
+  if (!s.cached) {
+    s.draw(context, px, py, size, color, THEMES[theme]);
+    return;
+  }
+  const pad = Math.ceil(size / 2); // margen para que el glow no se recorte
+  const key = `${skin}|${theme}|${size}|${color}`;
+  let tile = skinCache.get(key);
+  if (!tile) {
+    tile = document.createElement('canvas');
+    tile.width = tile.height = size + pad * 2;
+    s.draw(tile.getContext('2d'), pad, pad, size, color, THEMES[theme]);
+    skinCache.set(key, tile);
+  }
+  context.drawImage(tile, px - pad, py - pad);
+}
+
+function applySkin(name) {
+  skin = Object.prototype.hasOwnProperty.call(SKINS, name) ? name : 'retro';
+  document.documentElement.dataset.skin = skin;
+  skinSelect.value = skin;
+  // Redibujar una vez: con el juego en pausa el bucle no corre
+  if (current) {
+    draw();
+    drawNext();
+  }
+}
+
+skinSelect.addEventListener('change', () => {
+  try { localStorage.setItem(SKIN_KEY, skinSelect.value); } catch (e) { /* almacenamiento no disponible */ }
+  applySkin(skinSelect.value);
+  skinSelect.blur(); // las flechas vuelven a controlar el juego
+});
+// Si el selector conserva el foco (p. ej. tras elegir la misma skin), las teclas
+// del juego no deben cambiar la opción: se anula su efecto en el <select>, se le
+// quita el foco y el evento sigue hasta el manejador del documento (mover/pausar).
+const GAME_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyX', 'KeyP'];
+skinSelect.addEventListener('keydown', e => {
+  if (!GAME_KEYS.includes(e.code)) return;
+  e.preventDefault();
+  skinSelect.blur();
+});
+
+let savedSkin = null;
+try { savedSkin = localStorage.getItem(SKIN_KEY); } catch (e) { /* ignorar */ }
+applySkin(savedSkin);
 
 restartBtn.addEventListener('click', init);
 
@@ -576,8 +743,9 @@ function onClearClick(btn) {
   renderRecords(container, emptyRecords(), -1);
 }
 
+// Solo campos de texto: un <select> (skin, nivel inicial) reenvía las teclas del juego
 function isTypingTarget(el) {
-  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
 }
 
 function showStartScreen() {
