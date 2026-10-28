@@ -15,6 +15,11 @@
   --overlay-bg: rgba(10, 10, 20, 0.75);
   --danger: #e57373;
   --btn-text: #0f0f17;
+  --highlight-row: rgba(122, 162, 247, 0.22);
+  --gold: #ffd54f;
+  /* Fondo/sombra de los canvas; las skins pueden sobrescribirlos */
+  --canvas-bg: var(--board-bg);
+  --canvas-shadow: var(--board-shadow);
 }
 
 :root[data-theme="light"] {
@@ -34,6 +39,14 @@
   --overlay-bg: rgba(238, 240, 246, 0.8);
   --danger: #d32f2f;
   --btn-text: #ffffff;
+  --highlight-row: rgba(59, 91, 219, 0.16);
+  --gold: #b7791f;
+}
+
+/* Skin Neón: tablero siempre negro, también en modo claro */
+:root[data-skin="neon"] {
+  --canvas-bg: #000000;
+  --canvas-shadow: rgba(0, 240, 255, 0.25);
 }
 
 *, *::before, *::after {
@@ -96,9 +109,9 @@ body {
 #board {
   display: block;
   border: 1px solid var(--border);
-  background: var(--board-bg);
+  background: var(--canvas-bg);
   border-radius: 4px;
-  box-shadow: 0 0 40px var(--board-shadow);
+  box-shadow: 0 0 40px var(--canvas-shadow);
 }
 
 /* ---- Panel lateral ---- */
@@ -134,8 +147,28 @@ body {
 #next-canvas {
   display: block;
   border: 1px solid var(--border);
-  background: var(--board-bg);
+  background: var(--canvas-bg);
   border-radius: 4px;
+}
+
+/* ---- Selector de skin ---- */
+#skin-select {
+  background: var(--board-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+#skin-select:hover,
+#skin-select:focus {
+  border-color: var(--accent);
+  outline: none;
 }
 
 /* ---- Controles ---- */
@@ -217,4 +250,259 @@ kbd {
 
 #restart-btn:hover {
   background: var(--accent-hover);
+}
+
+/* ---- Pantalla de inicio y tabla de records ---- */
+#start-screen {
+  background: var(--bg);
+}
+
+.start-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: var(--accent);
+}
+
+#start-btn,
+#records-save-btn {
+  background: var(--accent);
+  color: var(--btn-text);
+  border: none;
+  border-radius: 6px;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+
+#records-save-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+#start-btn:hover,
+#records-save-btn:hover {
+  background: var(--accent-hover);
+}
+
+.records-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.records-block.hidden,
+.records-new.hidden,
+.records-form.hidden {
+  display: none;
+}
+
+.records-new {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.records-form {
+  display: flex;
+  gap: 6px;
+}
+
+#records-name {
+  width: 140px;
+  background: var(--board-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  user-select: text;
+}
+
+#records-name:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.records-title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--label);
+  font-weight: 600;
+}
+
+.records-table {
+  border-collapse: collapse;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.records-table th {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--label);
+  font-weight: 600;
+  padding: 2px 8px;
+  text-align: right;
+}
+
+.records-table td {
+  padding: 3px 8px;
+  text-align: right;
+}
+
+.records-table th:nth-child(2),
+.records-table td:nth-child(2) {
+  text-align: left;
+}
+
+.records-table tr.current td {
+  background: var(--highlight-row);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.records-empty {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.records-stats {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.records-stats strong {
+  color: var(--accent);
+}
+
+.clear-records-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.clear-records-btn:hover,
+.clear-records-btn.confirm {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ---- Menú de pausa ---- */
+.pause-box {
+  gap: 10px;
+  width: 220px;
+}
+
+#pause-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.menu-btn {
+  width: 100%;
+  background: var(--accent);
+  color: var(--btn-text);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.menu-btn:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.menu-btn.secondary {
+  background: var(--board-bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.menu-btn.secondary:hover {
+  border-color: var(--accent);
+}
+
+.menu-btn:focus-visible,
+#start-level:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.pause-controls {
+  list-style: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--board-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.pause-controls.hidden {
+  display: none;
+}
+
+.pause-controls li {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pause-controls li span {
+  display: flex;
+  gap: 4px;
+}
+
+.start-level {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+#start-level {
+  background: var(--board-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.pause-hint {
+  font-size: 11px;
+  color: var(--muted);
 }
