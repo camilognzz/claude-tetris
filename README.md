@@ -41,7 +41,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Vista previa** de la siguiente pieza.
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
-- **Pausa** y **Game Over** con opción de reinicio.
+- **Menú de pausa** (reanudar, reiniciar, ver controles, nivel inicial) y **Game Over** con opción de reinicio.
 - **Pantalla de inicio** con botón _Jugar_: la partida no empieza hasta pulsarlo.
 - **Tabla de records local** (`localStorage`, clave `tetris-records`): Top 5 puntuaciones con nombre del jugador (se pide al terminar la partida si entras en el top), mejor combo (bloqueos consecutivos que eliminan líneas) y máximo de líneas en una partida. Se muestra en la pantalla de inicio y en el Game Over, resalta tu entrada y se puede borrar con _Borrar records_ (doble clic de confirmación).
 
@@ -86,7 +86,14 @@ Después abre `http://localhost:8000` en el navegador.
 | `↑` o `X` | Rotar la pieza en sentido horario |
 | `↓`       | Soft drop (bajar más rápido)      |
 | `Espacio` | Hard drop (caída instantánea)     |
-| `P`       | Pausar / reanudar                 |
+| `P` o `Esc` | Abrir / cerrar el menú de pausa |
+
+Con el menú de pausa abierto los controles del juego quedan bloqueados (solo funcionan `P`/`Esc` y la navegación del menú con `Tab`, `Enter` y `Espacio`). El menú ofrece:
+
+- **Reanudar**: vuelve a la partida.
+- **Reiniciar**: empieza una partida nueva sin recargar la página.
+- **Ver controles**: muestra la lista de teclas dentro del menú.
+- **Nivel inicial**: elige con qué nivel (1–10) empieza la próxima partida; se guarda en `localStorage`.
 
 ---
 
@@ -100,7 +107,7 @@ Define la estructura visual:
 
 - Un `<canvas id="board">` de **300 × 600** píxeles donde se renderiza el tablero.
 - Un panel lateral con `SCORE`, `LINES`, `LEVEL`, vista de la siguiente pieza y la lista de controles.
-- Un overlay para los estados **PAUSA** y **GAME OVER**.
+- Un overlay para **GAME OVER** y otro (`#pause-menu`) para el menú de **PAUSA**.
 
 ### 2. `style.css`
 
