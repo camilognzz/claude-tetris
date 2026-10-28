@@ -15,6 +15,9 @@
   --overlay-bg: rgba(10, 10, 20, 0.75);
   --danger: #e57373;
   --btn-text: #0f0f17;
+  /* Fondo/sombra de los canvas; las skins pueden sobrescribirlos */
+  --canvas-bg: var(--board-bg);
+  --canvas-shadow: var(--board-shadow);
 }
 
 :root[data-theme="light"] {
@@ -34,6 +37,12 @@
   --overlay-bg: rgba(238, 240, 246, 0.8);
   --danger: #d32f2f;
   --btn-text: #ffffff;
+}
+
+/* Skin Neón: tablero siempre negro, también en modo claro */
+:root[data-skin="neon"] {
+  --canvas-bg: #000000;
+  --canvas-shadow: rgba(0, 240, 255, 0.25);
 }
 
 *, *::before, *::after {
@@ -96,9 +105,9 @@ body {
 #board {
   display: block;
   border: 1px solid var(--border);
-  background: var(--board-bg);
+  background: var(--canvas-bg);
   border-radius: 4px;
-  box-shadow: 0 0 40px var(--board-shadow);
+  box-shadow: 0 0 40px var(--canvas-shadow);
 }
 
 /* ---- Panel lateral ---- */
@@ -134,8 +143,28 @@ body {
 #next-canvas {
   display: block;
   border: 1px solid var(--border);
-  background: var(--board-bg);
+  background: var(--canvas-bg);
   border-radius: 4px;
+}
+
+/* ---- Selector de skin ---- */
+#skin-select {
+  background: var(--board-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+#skin-select:hover,
+#skin-select:focus {
+  border-color: var(--accent);
+  outline: none;
 }
 
 /* ---- Controles ---- */
