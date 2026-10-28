@@ -130,7 +130,7 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
+    level = Math.max(gameStartLevel, Math.floor(lines / 10) + 1);
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
   }
@@ -254,13 +254,13 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    closePauseMenu();
+    lockInputsBriefly();
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    openPauseMenu();
   }
 }
 
@@ -285,10 +285,14 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  gameStartLevel = startLevel;
+  level = gameStartLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+  resumeLockUntil = 0;
+  heldAtResume.clear();
+  closePauseMenu();
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
@@ -300,8 +304,15 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
-  if (paused || gameOver) return;
+  if (e.code === 'KeyP' || e.code === 'Escape') {
+    e.preventDefault();
+    if (!e.repeat) togglePause();
+    return;
+  }
+  // Con el menú abierto solo actúa la navegación nativa (Tab/Enter/Space en botones)
+  if (paused) { trapMenuFocus(e); return; }
+  if (gameOver) return;
+  if (isResumeLocked(e)) return;
   switch (e.code) {
     case 'ArrowLeft':
       if (!collide(current.shape, current.x - 1, current.y)) current.x--;
@@ -345,6 +356,108 @@ themeBtn.addEventListener('click', () => {
 });
 
 restartBtn.addEventListener('click', init);
+
+// ---- Menú de pausa ----
+const pauseMenu = document.getElementById('pause-menu');
+const resumeBtn = document.getElementById('resume-btn');
+const pauseRestartBtn = document.getElementById('pause-restart-btn');
+const controlsBtn = document.getElementById('controls-btn');
+const pauseControls = document.getElementById('pause-controls');
+const startLevelSelect = document.getElementById('start-level');
+const START_LEVEL_KEY = 'tetris-start-level';
+const MAX_START_LEVEL = 10;
+const RESUME_LOCK_MS = 150;
+
+// El nivel inicial es una preferencia del usuario: no se reinicia en init()
+let startLevel = 1;
+// Estado por partida (se reinicia en init()): nivel con el que empezó la partida
+// y bloqueo de inputs tras reanudar
+let gameStartLevel = 1, resumeLockUntil = 0;
+const heldAtResume = new Set();
+// Teclas físicamente pulsadas ahora mismo (no es estado de partida)
+const heldKeys = new Set();
+
+function openPauseMenu() {
+  pauseControls.classList.add('hidden');
+  controlsBtn.setAttribute('aria-expanded', 'false');
+  controlsBtn.textContent = 'Ver controles';
+  startLevelSelect.value = String(startLevel);
+  pauseMenu.classList.remove('hidden');
+  resumeBtn.focus();
+}
+
+function closePauseMenu() {
+  // Quitar el foco evita que Space/Enter vuelvan a activar un botón del menú
+  if (pauseMenu.contains(document.activeElement)) document.activeElement.blur();
+  pauseMenu.classList.add('hidden');
+}
+
+// Tras reanudar se ignoran las teclas un instante, y las que siguieran pulsadas
+// hasta que se suelten, para evitar movimientos accidentales
+function lockInputsBriefly() {
+  resumeLockUntil = performance.now() + RESUME_LOCK_MS;
+  heldAtResume.clear();
+  heldKeys.forEach(code => heldAtResume.add(code));
+}
+
+function isResumeLocked(e) {
+  return performance.now() < resumeLockUntil || heldAtResume.has(e.code);
+}
+
+// Mantiene el foco de Tab dentro del menú (es un diálogo modal)
+function trapMenuFocus(e) {
+  if (e.key !== 'Tab') return;
+  const items = [...pauseMenu.querySelectorAll('button, select')];
+  const first = items[0], last = items[items.length - 1];
+  const inside = pauseMenu.contains(document.activeElement);
+  if (e.shiftKey && (!inside || document.activeElement === first)) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
+function restartFromMenu() {
+  init();
+  lockInputsBriefly();
+}
+
+function setStartLevel(value) {
+  const n = parseInt(value, 10);
+  startLevel = Number.isInteger(n) ? Math.min(MAX_START_LEVEL, Math.max(1, n)) : 1;
+  startLevelSelect.value = String(startLevel);
+}
+
+resumeBtn.addEventListener('click', () => { if (paused) togglePause(); });
+pauseRestartBtn.addEventListener('click', restartFromMenu);
+
+controlsBtn.addEventListener('click', () => {
+  const show = pauseControls.classList.toggle('hidden') === false;
+  controlsBtn.setAttribute('aria-expanded', String(show));
+  controlsBtn.textContent = show ? 'Ocultar controles' : 'Ver controles';
+});
+
+startLevelSelect.addEventListener('change', () => {
+  setStartLevel(startLevelSelect.value);
+  try { localStorage.setItem(START_LEVEL_KEY, String(startLevel)); } catch (e) { /* almacenamiento no disponible */ }
+});
+
+document.addEventListener('keydown', e => heldKeys.add(e.code));
+document.addEventListener('keyup', e => {
+  heldKeys.delete(e.code);
+  heldAtResume.delete(e.code);
+});
+// Si la ventana pierde el foco no llegan los keyup: se olvida lo pulsado
+window.addEventListener('blur', () => {
+  heldKeys.clear();
+  heldAtResume.clear();
+});
+
+let savedStartLevel = null;
+try { savedStartLevel = localStorage.getItem(START_LEVEL_KEY); } catch (e) { /* ignorar */ }
+setStartLevel(savedStartLevel);
 
 let savedTheme = null;
 try { savedTheme = localStorage.getItem(THEME_KEY); } catch (e) { /* ignorar */ }
